@@ -9,7 +9,9 @@ const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const app = express();
 const filePath = path.join(__dirname, 'index.ejs');
-const {listingSchema} = require("./schema.js");
+const {listingSchema , reviewSchema} = require("./schema.js");
+const Review = require("./models/reviews.js");
+const reviews = require("./models/reviews.js");
 
 app.engine("ejs", ejsMate);
 app.use(express.urlencoded({ extended: true }));
@@ -82,6 +84,21 @@ app.get("/",(req,res)=>{
         next();
     }
  }
+
+
+ const validateReview = (req,res,next)=>{
+    let {error} = reviewSchema.validate(req.body);
+    if(error){
+        let errmsg = error.details.map((el)=>el.message).join(",");
+        console.log(error.details);
+        throw new ExpressError(400, errmsg);
+    }else{
+        next();
+    }
+ }
+
+
+
 app.get("/listings/new", (req,res)=>{
     res.render("listings/new.ejs");
 })
@@ -127,7 +144,7 @@ app.get("/listings", wrapAsync(async(req,res)=>{
 }))
 app.get("/listings/:id/show",wrapAsync(async(req,res)=>{
     let {id}= req.params;
-    let doc= await Listing.findById(id);
+    let doc= await Listing.findById(id).populate("reviews");
     console.log(doc);
     res.render("listings/show.ejs", {doc});
 // res.send("showing each list");
@@ -138,13 +155,30 @@ app.get("/listings/:id/delete",wrapAsync(async(req,res)=>{
     console.log(doc);
     res.redirect("/listings");
 }))
+// creating reviews
+app.post("/listings/:id/reviews",validateReview, wrapAsync(async(req,res)=>{
+    let listing= await Listing.findById(req.params.id);
+    let newreview= new Review(req.body.review);
+    listing.reviews.push(newreview);
+    await newreview.save();
+    await listing.save(); 
+    console.log("new review saved");
+    res.redirect("/listings");
+}));
+app.delete("/listings/:id/reviews/:reviewid", wrapAsync(async(req,res)=>{
+    let {id,reviewid}= req.params;
+    await Listing.findByIdAndUpdate(id, {$pull: {reviews: reviewid}});
+    await Review.findByIdAndDelete(reviewid);
+    res.redirect(`/listings/${id}/show`);
+}))
 app.all("*",(req,res,next)=>{
 next(new ExpressError(404,"Page not found"));
 
-})
+});
 
 
 app.use((err,req,res,next)=>{
     let {statuscode=500,message="something has occured!"}= err;
     res.render("error.ejs",{ err });
 })
+
