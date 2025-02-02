@@ -6,10 +6,13 @@ const data= require("./init/data.js");
 const ejsMate= require("ejs-mate");
 const app = express();
 const filePath = path.join(__dirname, 'index.ejs');
+const session= require("express-session");
+const flash = require("connect-flash");
 
 
 const listings= require("./routes/listing.js");
 const reviews= require("./routes/review.js");
+const { Session } = require("inspector/promises");
 
 app.engine("ejs", ejsMate);
 app.use(express.urlencoded({ extended: true }));
@@ -17,6 +20,23 @@ app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname,"public")));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname,"views"));
+
+
+
+const sessionOptions= {
+    secret: "ThisIsAsecret",
+    resave: false,
+    saveUninitialized: true,
+    cookie : {
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true
+    }
+}
+
+app.use(session(sessionOptions));
+app.use(flash());
+
 
 
 // connecting to mongo database
@@ -45,21 +65,28 @@ app.get("/",(req,res)=>{
     res.send("working properly");
 }) 
 
+
+
+
 // ------------------------------------------------------------------------------------------------
 //joi validation, this is server side validation. 
 // This is to verify whether all the fields in the listing are according to the schema or not
- const validateListing = (req,res,next)=>{
-    let {error} = listingSchema.validate(req.body);
-    if(error){
-        let errmsg = error.details.map((el)=>el.message).join(",");
-        console.log(error.details);
-        throw new ExpressError(400, errmsg);
-    }else{
-        next();
-    }
- }
-// Hii harshitha
+//  const validateListing = (req,res,next)=>{
+//     let {error} = listingSchema.validate(req.body);
+//     if(error){
+//         let errmsg = error.details.map((el)=>el.message).join(",");
+//         console.log(error.details);
+//         throw new ExpressError(400, errmsg);
+//     }else{
+//         next();
+//     }
+//  }
 
+app.use((req,res,next)=>{
+    res.locals.success= req.flash("success");
+    res.locals.error= req.flash("error");
+    next();
+})
  
 
 app.use("/listings", listings);

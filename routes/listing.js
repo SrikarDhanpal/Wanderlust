@@ -30,6 +30,7 @@ router.post("/",validateListing, wrapAsync(async (req, res,next) => {
     newListing = {...newListing, image:{url: newListing.image, filename: "your choice"}};
     const newListing1 = new Listing(newListing);
     await newListing1.save();
+    req.flash("success","new listing created!!");
     res.redirect("/listings");
 
     //    console.log(req.body);
@@ -41,6 +42,10 @@ router.get("/:id/edit", wrapAsync(async(req,res)=>{
     
     let {id}= req.params;
     let doc= await Listing.findById(id);
+    if(!doc){
+        req.flash("error","The Listing you want to access does not exist!!");
+        res.redirect("/listings");
+    }
     res.render("listings/edit", {doc});
 }))
 
@@ -53,6 +58,7 @@ router.put("/:id",validateListing,wrapAsync(async(req, res) => {
     newListing = {...newListing, image:{url: newListing.image, filename: "your choice"}};
   
     await Listing.findByIdAndUpdate(id, newListing);
+    req.flash("success","listing modified!!");
     res.redirect(`/listings/${id}/show`);
     // res.send("editing")
   }));
@@ -63,7 +69,11 @@ router.get("/", wrapAsync(async(req,res)=>{
 router.get("/:id/show",wrapAsync(async(req,res)=>{
     let {id}= req.params;
     let doc= await Listing.findById(id).populate("reviews");
-    console.log(doc);
+    // console.log(doc);
+    if(!doc){
+        req.flash("error","The Listing you want to access does not exist!!");
+        res.redirect("/listings");
+    }
     res.render("listings/show.ejs", {doc});
 // res.send("showing each list");
 }))
@@ -71,6 +81,7 @@ router.get("/:id/delete",wrapAsync(async(req,res)=>{
     let {id}= req.params;
     let doc= await Listing.findByIdAndDelete(id);
     console.log(doc);
+    req.flash("success"," listing deleted!!");
     res.redirect("/listings");
 }))
 
