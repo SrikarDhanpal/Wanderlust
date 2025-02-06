@@ -1,13 +1,13 @@
 <%- layout("/layouts/boilerplate") %>
 <div class="row">
   <div class="col-8 offset-3">
-    <h5 class="card-title"> <%=doc.title%>
+    <h5 class="card-title mt-1 mb-1"> <%=doc.title%></h5>
   </div>
   <div class="card col-6 offset-3 listing-card">
     <img src="<%= doc.image.url %>" class="card-img-top show-img" alt="This is the image of a place">
     <div class="card-body">
-     
-      </h5>
+     <p>Owned by <i><%= doc.owner.username%></i></p>
+      
       <p class="card-text"><%=doc.description%>
         <br/>
         &#8377;<%=doc.price%>
@@ -20,9 +20,12 @@
     </div>
   </div>
   <body>
-   <div class="btns">
-    
    
+   
+    <div class="btns">
+  <%  if(currUser && currUser._id.equals(doc.owner._id)){ %>
+
+      
       <form action="/listings/<%=doc._id%>/edit" class="col-1 offset-3">
         <button class="btn btn-dark add-btn">edit</button>
       </form>
@@ -31,7 +34,13 @@
         <button class="btn btn-dark">DELETE</button>
       </form>
     </div>
-    <div class="col-8 offset-3">
+ <% } %>
+   
+ 
+ 
+ <div class="col-8 offset-3">
+  <hr>
+      <%if(currUser){%>
       <h4>Leave a review</h4>
       <form action="/listings/<%= doc.id %>/reviews" method="POST" novalidate class="needs-validation">
         <div class="mb-3 mt-3">
@@ -44,14 +53,15 @@
           <div class="invalid-feedback">please enter valid review</div>
         <button class="btn btn-outline-dark mt-2">submit</button>
         </form>
+        <hr>
+        <%  } %>
         <br><br>
-
         <p><b>All reviews</b></p>
      <div class="row">
          <% for(let review of doc.reviews){ %>
                <div class="card col-5 mb-3 ms-2">
                 <div class="card-body">
-                  <h5 class="card-title">Srikar Dhanpal</h5>
+                  <h5 class="card-title"><%=review.author.username%></h5>
                   <p class="card-text"><%=review.Comment%></p>
                   <p class="card-text"><%=review.rating%> stars</p>
                   <form class="mb-3" method="POST" action="/listings/<%=doc._id%>/reviews/<%=review._id%>?_method=DELETE">

@@ -2,25 +2,15 @@ const express= require("express");
 const router= express.Router();
 const wrapAsync = require("../utils/wrapAsync.js");
 const Listing = require("../models/listing.js");
-const {listingSchema} = require("../schema.js");
-const ExpressError = require("../utils/ExpressError.js");
+const {logincheck,isOwner,validateListing}= require("../middleware.js");
 
 
-const validateListing = (req,res,next)=>{
-    let {error} = listingSchema.validate(req.body);
-    if(error){
-        let errmsg = error.details.map((el)=>el.message).join(",");
-        console.log(error.details);
-        throw new ExpressError(400, errmsg);
-    }else{
-        next();
-    }
- }
 
-router.get("/new", (req,res)=>{
+router.get("/new", logincheck,(req,res)=>{
+    
     res.render("listings/new.ejs");
 })
-router.post("/",validateListing, wrapAsync(async (req, res,next) => {
+router.post("/",validateListing,logincheck, wrapAsync(async (req, res,next) => {
     // let {title,description,image,price,location}= req.body;
    
 
@@ -29,6 +19,7 @@ router.post("/",validateListing, wrapAsync(async (req, res,next) => {
     let newListing = req.body.listing;
     newListing = {...newListing, image:{url: newListing.image, filename: "your choice"}};
     const newListing1 = new Listing(newListing);
+    newListing1.owner=req.user._id;
     await newListing1.save();
     req.flash("success","new listing created!!");
     res.redirect("/listings");
@@ -38,7 +29,7 @@ router.post("/",validateListing, wrapAsync(async (req, res,next) => {
     
    
   }));
-router.get("/:id/edit", wrapAsync(async(req,res)=>{
+router.get("/:id/edit",logincheck,isOwner, wrapAsync(async(req,res)=>{
     
     let {id}= req.params;
     let doc= await Listing.findById(id);
@@ -49,7 +40,7 @@ router.get("/:id/edit", wrapAsync(async(req,res)=>{
     res.render("listings/edit", {doc});
 }))
 
-router.put("/:id",validateListing,wrapAsync(async(req, res) => {
+router.put("/:id",validateListing,isOwner,wrapAsync(async(req, res) => {
     let { id } = req.params;
     let newListing = req.body.listing;
     if(!req.body.listing){
@@ -57,8 +48,8 @@ router.put("/:id",validateListing,wrapAsync(async(req, res) => {
     }
     newListing = {...newListing, image:{url: newListing.image, filename: "your choice"}};
   
-    await Listing.findByIdAndUpdate(id, newListing);
-    req.flash("success","listing modified!!");
+await Listing.findByIdAndUpdate(id, newListing);
+      req.flash("success","listing modified!!");
     res.redirect(`/listings/${id}/show`);
     // res.send("editing")
   }));
@@ -68,7 +59,12 @@ router.get("/", wrapAsync(async(req,res)=>{
 }))
 router.get("/:id/show",wrapAsync(async(req,res)=>{
     let {id}= req.params;
-    let doc= await Listing.findById(id).populate("reviews");
+    let doc= await Listing.findById(id).populate({
+        path: "reviews",
+         populate:{
+        path: "author"
+         }
+    }).populate("owner");
     // console.log(doc);
     if(!doc){
         req.flash("error","The Listing you want to access does not exist!!");
@@ -77,7 +73,7 @@ router.get("/:id/show",wrapAsync(async(req,res)=>{
     res.render("listings/show.ejs", {doc});
 // res.send("showing each list");
 }))
-router.get("/:id/delete",wrapAsync(async(req,res)=>{
+router.get("/:id/delete",logincheck,isOwner,wrapAsync(async(req,res)=>{
     let {id}= req.params;
     let doc= await Listing.findByIdAndDelete(id);
     console.log(doc);
