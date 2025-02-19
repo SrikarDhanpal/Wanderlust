@@ -1,3 +1,8 @@
+if(process.env.NODE_ENV != "production"){
+
+    require('dotenv').config();
+}
+console.log(process.env.SECRET);
 const express= require("express");
 const mongoose = require('mongoose');
 const path= require("path");
@@ -76,23 +81,6 @@ app.get("/",(req,res)=>{
     res.send("working properly");
 }) 
 
-
-
-
-// ------------------------------------------------------------------------------------------------
-//joi validation, this is server side validation. 
-// This is to verify whether all the fields in the listing are according to the schema or not
-//  const validateListing = (req,res,next)=>{
-//     let {error} = listingSchema.validate(req.body);
-//     if(error){
-//         let errmsg = error.details.map((el)=>el.message).join(",");
-//         console.log(error.details);
-//         throw new ExpressError(400, errmsg);
-//     }else{
-//         next();
-//     }
-//  }
-
 app.use((req,res,next)=>{
     res.locals.success= req.flash("success");
     res.locals.error= req.flash("error");
@@ -115,4 +103,5 @@ app.use((err,req,res,next)=>{
     let {statuscode=500,message="something has occured!"}= err;
     res.render("error.ejs",{ err });
 })
+
 

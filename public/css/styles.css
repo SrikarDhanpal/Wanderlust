@@ -90,3 +90,12 @@ transform: scale(1.03);
 /* transition: linear; */
 transition: transform 0.3s ease-in-out;
 }
+.edit-form-img{
+    height: 140px;
+    width: 250px;
+}
+
+#map{
+    height: 400px;
+    width: 80vh;
+}
