@@ -2,13 +2,9 @@ if(process.env.NODE_ENV != "production"){
 
     require('dotenv').config();
 }
-<<<<<<< HEAD
-console.log(process.env.SECRET);
-=======
 
 console.log(process.env.SECRET);
 
->>>>>>> dc647b9558383dc48548ef22b6786659fb2eea5b
 const express= require("express");
 const mongoose = require('mongoose');
 const path= require("path");
