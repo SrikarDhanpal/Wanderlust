@@ -2,9 +2,6 @@ if(process.env.NODE_ENV != "production"){
 
     require('dotenv').config();
 }
-
-console.log(process.env.SECRET);
-
 const express= require("express");
 const mongoose = require('mongoose');
 const path= require("path");
@@ -14,6 +11,7 @@ const ejsMate= require("ejs-mate");
 const app = express();
 const filePath = path.join(__dirname, 'index.ejs');
 const session= require("express-session");
+const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
 const passport= require("passport");
 const localStrategy= require("passport-local");
@@ -33,9 +31,22 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname,"views"));
 
 
+const dbUrl = process.env.ATLASDB_URL;
+
+const store = MongoStore.create({
+    mongoUrl : dbUrl,
+    crypt:{
+        secret: process.env.SECRET
+    },
+    touchAfter: 24*3600
+});
+store.on("error",()=>{
+    console.log("ERROR OCCURED IN MONGO SESSION STORE");
+});
 
 const sessionOptions= {
-    secret: "ThisIsAsecret",
+    store,
+    secret: process.env.SECRET,    
     resave: false,
     saveUninitialized: true,
     cookie : {
@@ -44,6 +55,8 @@ const sessionOptions= {
         httpOnly: true
     }
 }
+
+
 
 app.use(session(sessionOptions));
 app.use(flash());
@@ -54,6 +67,7 @@ passport.use(new localStrategy(User.authenticate()));
 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
+
 
 
 
@@ -70,7 +84,7 @@ main()
 main().catch(err => console.log(err));
 
 async function main() {
-    await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
+    await mongoose.connect(dbUrl);
     
     // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
 }
