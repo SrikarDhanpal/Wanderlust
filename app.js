@@ -94,7 +94,7 @@ app.listen(1975,()=>{
     console.log("iam listening");
 });
 app.get("/",(req,res)=>{
-    res.send("working properly");
+    res.redirect("/listings");
 }) 
 
 app.use((req,res,next)=>{
